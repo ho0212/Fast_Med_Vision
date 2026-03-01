@@ -11,7 +11,7 @@ print(dummy_data)
 print("=" * 30)
 
 # Call the function from the fast_med_vision library
-result = fmv.process_image(dummy_data)
+result = fmv.process_image_test(dummy_data)
 
 print("Processed Data:")
 print(result)
