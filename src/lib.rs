@@ -1,6 +1,8 @@
 use pyo3::prelude::*;
 use numpy::{IntoPyArray, PyArrayDyn, PyReadonlyArrayDyn};
 use ndarray::parallel::prelude::*;
+use rand::thread_rng;
+use rand_distr::{Distribution, Normal};
 
 /// This is a testing function that demonstrates how to receive a NumPy array from Python, 
 /// process it in Rust, and return a new NumPy array back to Python. 
@@ -40,10 +42,32 @@ fn fast_normalise<'py>(py: Python<'py>, input_array: PyReadonlyArrayDyn<f64>) ->
     result_array.into_pyarray(py)
 }
 
+/// This function adds Gaussian noise to the input array. 
+/// It takes a NumPy array, the mean and standard deviation of the noise as input, processes it in Rust, and returns the noisy array back to Python.
+#[pyfunction]
+fn add_gaussian_noise<'py>(py: Python<'py>, input_array: PyReadonlyArrayDyn<f64>, noise_mean: f64, noise_std: f64) -> &'py PyArrayDyn<f64> {
+    // Convert the input NumPy array to a Rust array
+    let rust_array = input_array.as_array();
+
+    // Create a normal distribution with the specified mean and standard deviation
+    let normal_dist = Normal::new(noise_mean, noise_std).unwrap();
+
+    let mut result_array = rust_array.to_owned();
+
+    result_array.par_mapv_inplace(|x| {
+        let mut rng = thread_rng();
+        x + normal_dist.sample(&mut rng) // Add Gaussian noise to each element
+    });
+
+    // Convert the noisy Rust array back to a NumPy array and return it
+    result_array.into_pyarray(py)
+}
+
 
 #[pymodule]
 fn fast_med_vision(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(process_image_test, m)?)?;
     m.add_function(wrap_pyfunction!(fast_normalise, m)?)?;
+    m.add_function(wrap_pyfunction!(add_gaussian_noise, m)?)?;
     Ok(())
 }
