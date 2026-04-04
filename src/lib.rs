@@ -4,6 +4,7 @@ use ndarray::parallel::prelude::*;
 use rand::thread_rng;
 use rand_distr::{Distribution, Normal};
 use rayon::prelude::*;
+use ndarray::Zip;
 
 /// This is a testing function that demonstrates how to receive a NumPy array from Python, 
 /// process it in Rust, and return a new NumPy array back to Python. 
@@ -103,11 +104,55 @@ fn percentile_clip<'py>(py: Python<'py>, input_array: PyReadonlyArrayDyn<f64>, l
     result_array.into_pyarray(py)
 }
 
+#[pyfunction]
+fn masked_normalise<'py>(py: Python<'py>, input_array: PyReadonlyArrayDyn<f64>, mask_array: PyReadonlyArrayDyn<u8>) -> &'py PyArrayDyn<f64> {
+    // Convert the input NumPy arrays to Rust arrays
+    let rust_array = input_array.as_array();
+    let mask_array = mask_array.as_array();
+
+    // Calculate the mean and std deviation of the masked array
+    let valid_pixels: Vec<f64> = rust_array.iter()
+        .zip(mask_array.iter())
+        .filter_map(|(&pixel, &mask)| if mask != 0 { Some(pixel) } else { None })
+        .collect();
+
+    let count = valid_pixels.len() as f64;
+
+    // Return an array of zeros if there are no valid pixels to avoid division by zero
+    if count == 0.0 {
+        let result_array = numpy::ndarray::Array::zeros(rust_array.raw_dim());
+        return result_array.into_pyarray(py);
+    }
+    
+    // Calculate the mean, variance, and standard deviation of the valid pixels
+    let mean = valid_pixels.iter().sum::<f64>() / count;
+    let variance = valid_pixels.iter().map(|&x| (x - mean).powi(2)).sum::<f64>() / count;
+    let std = if variance == 0.0 { 1.0 } else { variance.sqrt() };
+
+    // Normalise the array using the mean and std deviation with parallel processing
+    let mut result_array = numpy::ndarray::Array::zeros(rust_array.raw_dim());
+
+    Zip::from(&mut result_array)
+        .and(rust_array)
+        .and(mask_array)
+        .par_apply(|result_pixel, &input_pixel, &mask_pixel| {
+            if mask_pixel != 0 {
+                *result_pixel = (input_pixel - mean) / std; // Normalise only valid pixels
+            }
+        });
+    
+    result_array.into_pyarray(py)
+
+}
+
+
+
 #[pymodule]
 fn fast_med_vision(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(process_image_test, m)?)?;
     m.add_function(wrap_pyfunction!(fast_normalise, m)?)?;
     m.add_function(wrap_pyfunction!(add_gaussian_noise, m)?)?;
     m.add_function(wrap_pyfunction!(percentile_clip, m)?)?;
+    m.add_function(wrap_pyfunction!(masked_normalise, m)?)?;
     Ok(())
 }
