@@ -3,7 +3,7 @@ use numpy::{IntoPyArray, PyArrayDyn, PyReadonlyArrayDyn};
 use ndarray::parallel::prelude::*;
 use rand::thread_rng;
 use rand_distr::{Distribution, Normal};
-use rayon::prelude::*;
+use rayon::{prelude::*, result};
 use ndarray::Zip;
 
 /// This is a testing function that demonstrates how to receive a NumPy array from Python, 
@@ -145,6 +145,34 @@ fn masked_normalise<'py>(py: Python<'py>, input_array: PyReadonlyArrayDyn<f64>, 
 
 }
 
+#[pyfunction]
+fn min_max_scale<'py>(py: Python<'py>, input_array: PyReadonlyArrayDyn<f64>) -> &'py PyArrayDyn<f64> {
+    // Convert the input NumPy array to a Rust array
+    let rust_array = input_array.as_array();
+
+    // Find the minimum and maximum values in the array
+    let (min_value, max_value) = rust_array.iter().fold((f64::INFINITY, f64::NEG_INFINITY), |(min, max), &x| {
+        (min.min(x), max.max(x))
+    });
+
+    // Avoid division by zero if all values are the same
+    let range = max_value - min_value;
+
+    // Scale the array to the range [0, 1] with parallel processing
+    let mut result_array = numpy::ndarray::Array::zeros(rust_array.raw_dim());
+
+    if range > 0.0 {
+        Zip::from(&mut result_array)
+            .and(rust_array)
+            .par_for_each(|result_pixel, &input_pixel| {
+                *result_pixel = (input_pixel - min_value) / range; // Scale to [0, 1]
+            });
+    }
+
+    result_array.into_pyarray(py)
+
+}
+
 
 
 #[pymodule]
@@ -154,5 +182,6 @@ fn fast_med_vision(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(add_gaussian_noise, m)?)?;
     m.add_function(wrap_pyfunction!(percentile_clip, m)?)?;
     m.add_function(wrap_pyfunction!(masked_normalise, m)?)?;
+    m.add_function(wrap_pyfunction!(min_max_scale, m)?)?;
     Ok(())
 }
