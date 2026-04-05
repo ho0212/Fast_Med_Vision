@@ -2,6 +2,7 @@ import numpy as np
 import time
 import fast_med_vision as fmv
 
+np.random.seed(42)  # For reproducibility
 shape = (100, 512, 512)
 num_patients = 5 # Simulate multiple patients' MRI scans (Batch size of 5)
 
@@ -44,4 +45,4 @@ if not is_close:
     print("Warning: The arrays do not match exactly. This may be due to floating-point precision differences.")
 if np_time > 0 and rust_time > 0:
     speedup = np_time / rust_time
-    print(f"Speedup of Rust normalisation over NumPy: {speedup:.2f}x")
+    print(f"Rust normalisation is {speedup:.2f} times faster than NumPy.")

@@ -2,6 +2,7 @@ import numpy as np
 import fast_med_vision as fmv
 import time
 
+np.random.seed(42)  # For reproducibility
 shape = (100, 512, 512)
 num_patients = 5
 print(f"Simulating 3D medical images for {num_patients} patients with shape {shape} and dtype float64...")

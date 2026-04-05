@@ -2,6 +2,7 @@ import numpy as np
 import fast_med_vision as fmv
 import time
 
+np.random.seed(42)  # For reproducibility
 shape = (100, 512, 512)
 num_patients = 5 # Simulate multiple patients' MRI scans (Batch size of 5)
 
@@ -57,4 +58,4 @@ print(f"Expected std: {noise_std:.6f} | Actual Rust std: {np.std(extracted_rust_
 
 if np_time > 0 and rust_time > 0:
     speedup = np_time / rust_time
-    print(f"Speedup of Rust noise adding over NumPy: {speedup:.2f}x")
+    print(f"Rust noise adding is {speedup:.2f} times faster than NumPy.")
