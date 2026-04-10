@@ -209,3 +209,10 @@ __marimo__/
 # Rust
 target/
 Cargo.lock
+
+# Data
+data/
+*.zip
+*.tar.gz
+*.csv
+*.h5
