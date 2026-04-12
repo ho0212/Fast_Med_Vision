@@ -216,3 +216,6 @@ data/
 *.tar.gz
 *.csv
 *.h5
+
+# Pytorch Models
+*.pth

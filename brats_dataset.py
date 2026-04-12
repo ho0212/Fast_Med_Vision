@@ -47,16 +47,11 @@ class BraTSDataset(Dataset):
     Each .h5 file contains a single slice of a patient's brain scan, with 4 channels (FLAIR, T1, T1CE, T2) and a corresponding mask. 
     The dataset applies specified transforms to the images and masks before returning them as PyTorch tensors.
     """
-    def __init__(self, data_dir, transforms=None):
-        self.files = []
-        for root, dirs, files in os.walk(data_dir):
-            for f in files:
-                if f.endswith(".h5"):
-                    self.files.append(os.path.join(root, f))
-
+    def __init__(self, file_list, transforms=None):
+        self.files = file_list
         self.transforms = transforms
         
-        print(f"Found {len(self.files)} .h5 files in {data_dir}")
+        print(f"Found {len(self.files)} .h5 files.")
 
     def __len__(self):
         return len(self.files)
@@ -72,24 +67,24 @@ class BraTSDataset(Dataset):
         
         return image, mask
 
-if __name__ == "__main__":
-    data_dir = "./data/brats2020-training-data"
-    train_transforms = ComposeTransforms([
-        FastMedicalNormalisation(),
-        ToPyTorchTensor()
-    ])
-    test_transforms = ComposeTransforms([
-        FastMedicalNormalisation(),
-        ToPyTorchTensor()
-    ])
+# if __name__ == "__main__":
+#     data_dir = "./data/brats2020-training-data"
+#     train_transforms = ComposeTransforms([
+#         FastMedicalNormalisation(),
+#         ToPyTorchTensor()
+#     ])
+#     test_transforms = ComposeTransforms([
+#         FastMedicalNormalisation(),
+#         ToPyTorchTensor()
+#     ])
 
-    train_set = BraTSDataset(data_dir, transforms=train_transforms)
-    test_set = BraTSDataset(data_dir, transforms=test_transforms)
+#     train_set = BraTSDataset(data_dir, transforms=train_transforms)
+#     test_set = BraTSDataset(data_dir, transforms=test_transforms)
 
-    dataloader = DataLoader(train_set, batch_size=8, shuffle=True)
+#     dataloader = DataLoader(train_set, batch_size=8, shuffle=True)
 
-    images, masks = next(iter(dataloader))
-    print(f"Batch of images shape: {images.shape}")  # Should be (B, C, H, W)
-    print(f"Batch of masks shape: {masks.shape}")    # Should be (B, C, H, W)
-    print("Min and max pixel values in images:", images.min().item(), images.max().item())  # Check if normalisation worked
-    print(f"Unique values in masks: {torch.unique(masks)}")  # Check unique values in masks to ensure they are correct (e.g., 0 and 1)
+#     images, masks = next(iter(dataloader))
+#     print(f"Batch of images shape: {images.shape}")  # Should be (B, C, H, W)
+#     print(f"Batch of masks shape: {masks.shape}")    # Should be (B, C, H, W)
+#     print("Min and max pixel values in images:", images.min().item(), images.max().item())  # Check if normalisation worked
+#     print(f"Unique values in masks: {torch.unique(masks)}")  # Check unique values in masks to ensure they are correct (e.g., 0 and 1)
