@@ -107,7 +107,7 @@ python predict.py
 ```
 - **Run Benchmarks:**
 ```Bash
-python python benchmarks/Brats/benchmark_brat.py
+python benchmarks/Brats/benchmark_brat.py
 ```
 
 ## References
